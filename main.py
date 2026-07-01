@@ -7,6 +7,17 @@ import decky
 import asyncio
 
 class Plugin:
+    _status = False
+
+    async def jellyfin_status(self):
+        return self._status
+
+    async def start_jellyfin(self):
+        _status = True
+
+    async def stop_jellyfin(self):
+        _status = False
+
     # A normal method. It can be called from the TypeScript side using @decky/api.
     async def add(self, left: int, right: int) -> int:
         return left + right

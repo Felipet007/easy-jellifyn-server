@@ -2,7 +2,6 @@ import {
   ButtonItem,
   PanelSection,
   PanelSectionRow,
-  Navigation,
   staticClasses
 } from "@decky/ui";
 import {
@@ -13,75 +12,64 @@ import {
   toaster,
   // routerHook
 } from "@decky/api"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaShip } from "react-icons/fa";
 
 // import logo from "../assets/logo.png";
 
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
+const jellyfinStatus = callable<[], boolean>("jellyfin_status");
+const startJellyfinServer = callable<[], boolean>("start_jellyfin");
+const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
 
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
+  const [running, setRunning] = useState(false);
+  const refreshStatus = async () => {
+    const status = await jellyfinStatus();
+    setRunning(status);
+  }
 
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
+  useEffect(() => {
+    refreshStatus();
+  }, []);
+
+  const startJellyfin = async () => {
+    await startJellyfinServer();
+    await refreshStatus();
+  };
+
+  const stopJellyfin = async () => {
+    await stopJellyfinServer();
+    await refreshStatus();
   };
 
   return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
-        </ButtonItem>
-      </PanelSectionRow>
+      <PanelSection title="Jellyfin">
 
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
+        <PanelSectionRow>
+          <ButtonItem>
+            Estado: {running ? "🟢 Server is on" : "🔴 Server is off"}
+          </ButtonItem>
+        </PanelSectionRow>
 
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
-    </PanelSection>
+        <PanelSectionRow>
+          <ButtonItem onClick={() => startJellyfin()}>
+            Start Jellyfin Server
+          </ButtonItem>
+        </PanelSectionRow>
+
+        <PanelSectionRow>
+          <ButtonItem onClick={() => stopJellyfin()}>
+            Stop Jellyfin Server
+          </ButtonItem>
+        </PanelSectionRow>
+
+      </PanelSection>
   );
 };
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
+  console.log("Easy Decky Server plugin initializing, this is called once on frontend startup")
 
   // Add an event listener to the "timer_event" event from the backend
   const listener = addEventListener<[
@@ -98,9 +86,9 @@ export default definePlugin(() => {
 
   return {
     // The name shown in various decky menus
-    name: "Test Plugin",
+    name: "Easy Jellyfin Server",
     // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
+    titleView: <div className={staticClasses.Title}>Easy Jellyfin Server</div>,
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
