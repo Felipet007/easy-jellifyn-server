@@ -50,8 +50,6 @@ backend/out
 decky_plugin.py
 
 # Ignore decky CLI for building plugins
-out
-out/*
 cli/
 cli/*
 cli/decky
