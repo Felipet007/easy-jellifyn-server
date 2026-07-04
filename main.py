@@ -8,12 +8,12 @@ import asyncio
 import socket
 import subprocess
 from pathlib import Path
-import xml.etree.ElementTree as ET
+import re
 
 APP_ID = "org.jellyfin.JellyfinServer"
 
 class Plugin:
-    _status = True
+    _status = False
 
     async def jellyfin_status(self):
         return self._status
@@ -59,12 +59,11 @@ class Plugin:
     async def get_jellyfin_port(self):
         try:
             config_path = self.get_jellyfin_config_path()
-            tree = ET.parse(config_path)
-            root = tree.getroot()
+            text = Path(config_path).read_text()
 
-            port = root.findtext("HttpServerPortNumber")
-            if port:
-                return port
+            match = re.search(r"<HttpServerPortNumber>(\d+)</HttpServerPortNumber>", text)
+            if match:
+                return match.group(1)
         except:
             pass
 
