@@ -20,6 +20,7 @@ import { FaShip } from "react-icons/fa";
 const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
 const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
+const longTimer = callable<[], boolean>("long_running");
 
 
 function Content() {
@@ -35,11 +36,13 @@ function Content() {
 
   const startJellyfin = async () => {
     await startJellyfinServer();
+    await longTimer();
     await refreshStatus();
   };
 
   const stopJellyfin = async () => {
     await stopJellyfinServer();
+    await longTimer();
     await refreshStatus();
   };
 

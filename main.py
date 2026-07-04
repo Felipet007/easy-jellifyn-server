@@ -7,7 +7,7 @@ import decky
 import asyncio
 
 class Plugin:
-    _status = False
+    _status = True
 
     async def jellyfin_status(self):
         return self._status
