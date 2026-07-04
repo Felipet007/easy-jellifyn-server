@@ -20,11 +20,11 @@ const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
 const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
 const longTimer = callable<[], boolean>("long_running");
-const getLocalIP = callable<[], string>("get_local_ip");
+const getServerAddress = callable<[], string>("get_server_address");
 
 function Content() {
   const [running, setRunning] = useState(false);
-  const [ip, setIp] = useState("");
+  const [serverAddress, setServerAddress] = useState("");
 
   const refreshStatus = async () => {
     const status = await jellyfinStatus();
@@ -32,25 +32,41 @@ function Content() {
   }
 
   const printIP = async () => {
-    const ip = await getLocalIP();
-    setIp(ip);
+    const ip = await getServerAddress();
+    setServerAddress(ip);
   }
 
   useEffect(() => {
     refreshStatus();
   }, []);
 
+  useEffect(() => {
+    const listener = addEventListener<[]>(
+        "server_running_event",
+        async () => {
+          await refreshStatus();
+          await printIP();
+
+          toaster.toast({
+            title: "Server is on!",
+            body: `Server running on ${serverAddress}`,
+          });
+        }
+    );
+
+    return () => removeEventListener("server_running_event", listener);
+  }, []);
+
   const startJellyfin = async () => {
     await startJellyfinServer();
-    await longTimer();
-    await refreshStatus();
-    await printIP();
+    //await refreshStatus();
+    //await printIP();
   };
 
   const stopJellyfin = async () => {
     await stopJellyfinServer();
-    await longTimer();
-    await refreshStatus();
+    longTimer();
+    setServerAddress("");
   };
 
   return (
@@ -121,7 +137,7 @@ function Content() {
                       fontFamily: "monospace",
                     }}
                 >
-                  {ip}:8096
+                  {serverAddress}:8096
                 </div>
               </div>
             </PanelSectionRow>

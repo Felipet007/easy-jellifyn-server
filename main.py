@@ -6,6 +6,11 @@ import os
 import decky
 import asyncio
 import socket
+import subprocess
+from pathlib import Path
+import xml.etree.ElementTree as ET
+
+APP_ID = "org.jellyfin.JellyfinServer"
 
 class Plugin:
     _status = True
@@ -15,11 +20,18 @@ class Plugin:
 
     async def start_jellyfin(self):
         self._status = True
+        self.server_running()
 
     async def stop_jellyfin(self):
         self._status = False
 
-    async def get_local_ip(self):
+    async def get_server_address(self):
+        ip = self.get_local_ip()
+        port = self.get_jellyfin_port()
+
+        return f'{ip}:{port}'
+
+    def get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("8.8.8.8", 80))
@@ -30,6 +42,37 @@ class Plugin:
             s.close()
 
         return ip
+
+    def get_flatpak_app_path(self):
+        result = subprocess.run(
+            ["flatpak", "info", "--show-location", APP_ID],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return Path(result.stdout.strip())
+
+    def get_jellyfin_config_path(self):
+        app_path = self.get_flatpak_app_path()
+        return app_path / "config" / "jellyfin" / "system.xml"
+
+    async def get_jellyfin_port(self):
+        try:
+            config_path = self.get_jellyfin_config_path()
+            tree = ET.parse(config_path)
+            root = tree.getroot()
+
+            port = root.findtext("HttpServerPortNumber")
+            if port:
+                return port
+        except:
+            pass
+
+        return "9096"
+
+    async def server_running(self):
+        await asyncio.sleep(5)
+        await decky.emit("server_running_event", "¡Server is on!")
 
     # A normal method. It can be called from the TypeScript side using @decky/api.
     async def add(self, left: int, right: int) -> int:
