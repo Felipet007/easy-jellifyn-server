@@ -20,13 +20,20 @@ const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
 const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
 const longTimer = callable<[], boolean>("long_running");
-
+const getLocalIP = callable<[], string>("get_local_ip");
 
 function Content() {
   const [running, setRunning] = useState(false);
+  const [ip, setIp] = useState("");
+
   const refreshStatus = async () => {
     const status = await jellyfinStatus();
     setRunning(status);
+  }
+
+  const printIP = async () => {
+    const ip = await getLocalIP();
+    setIp(ip);
   }
 
   useEffect(() => {
@@ -37,6 +44,7 @@ function Content() {
     await startJellyfinServer();
     await longTimer();
     await refreshStatus();
+    await printIP();
   };
 
   const stopJellyfin = async () => {
@@ -52,82 +60,100 @@ function Content() {
               style={{
                 width: "100%",
                 padding: "14px 18px",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.12)",
+                marginBottom: "22px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255,255,255,0.14)",
                 background: "rgba(255,255,255,0.04)",
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
+                gap: "14px",
                 boxSizing: "border-box",
               }}
           >
         <span
             style={{
-              width: "18px",
-              height: "18px",
+              width: "20px",
+              height: "20px",
               borderRadius: "50%",
-              background: running ? "#65d841" : "#d84343",
+              background: running ? "#39ff14" : "#d84343",
               boxShadow: running
-                  ? "0 0 10px rgba(101,216,65,0.8)"
-                  : "0 0 10px rgba(216,67,67,0.8)",
+                  ? "0 0 14px rgba(57,255,20,0.9)"
+                  : "0 0 14px rgba(216,67,67,0.9)",
               flexShrink: 0,
             }}
         />
 
-            <span style={{ fontSize: "16px" }}>
+            <span style={{ fontSize: "16px", fontWeight: 600 }}>
           Estado: {running ? "Server is on" : "Server is off"}
         </span>
           </div>
         </PanelSectionRow>
 
+        {running && (
+            <PanelSectionRow>
+              <div
+                  style={{
+                    width: "100%",
+                    padding: "14px 18px",
+                    marginBottom: "22px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.04)",
+                    boxSizing: "border-box",
+                  }}
+              >
+                <div
+                    style={{
+                      fontSize: "12px",
+                      color: "rgba(255,255,255,0.65)",
+                      marginBottom: "8px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                >
+                  Dirección del servidor
+                </div>
+
+                <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      fontFamily: "monospace",
+                    }}
+                >
+                  {ip}:8096
+                </div>
+              </div>
+            </PanelSectionRow>
+        )}
+
         <PanelSectionRow>
-          <div
+          <button
+              onClick={running ? stopJellyfin : startJellyfin}
               style={{
-                display: "flex",
-                gap: "10px",
                 width: "100%",
+                height: "86px",
+                border: "none",
+                borderRadius: "12px",
+                background: running ? "#d93939" : "#2e9e44",
+                color: "white",
+                fontSize: "18px",
+                fontWeight: 700,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
               }}
           >
-            <button
-                onClick={startJellyfin}
-                style={{
-                  flex: 1,
-                  minHeight: "58px",
-                  border: "none",
-                  borderRadius: "8px",
-                  background: running ? "rgba(255,255,255,0.08)" : "#2f9e28",
-                  color: "white",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  opacity: running ? 0.45 : 1,
-                }}
-                disabled={running}
-            >
-              ▶ Start Jellyfin
-              <br />
-              Server
-            </button>
+        <span style={{ fontSize: "32px", lineHeight: 1 }}>
+          {running ? "■" : "▶"}
+        </span>
 
-            <button
-                onClick={stopJellyfin}
-                style={{
-                  flex: 1,
-                  minHeight: "58px",
-                  border: "none",
-                  borderRadius: "8px",
-                  background: running ? "#b83232" : "rgba(255,255,255,0.08)",
-                  color: "white",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  opacity: running ? 1 : 0.45,
-                }}
-                disabled={!running}
-            >
-              ■ Stop Jellyfin
-              <br />
-              Server
-            </button>
-          </div>
+            <span>
+          {running ? "Stop server" : "Start server"}
+        </span>
+          </button>
         </PanelSectionRow>
       </PanelSection>
   );

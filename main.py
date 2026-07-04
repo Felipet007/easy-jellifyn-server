@@ -5,6 +5,7 @@ import os
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
 import asyncio
+import socket
 
 class Plugin:
     _status = True
@@ -17,6 +18,18 @@ class Plugin:
 
     async def stop_jellyfin(self):
         self._status = False
+
+    async def get_local_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        except:
+            ip = "127.0.0.1"
+        finally:
+            s.close()
+
+        return ip
 
     # A normal method. It can be called from the TypeScript side using @decky/api.
     async def add(self, left: int, right: int) -> int:
