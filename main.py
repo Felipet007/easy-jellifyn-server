@@ -13,17 +13,17 @@ class Plugin:
         return self._status
 
     async def start_jellyfin(self):
-        _status = True
+        self._status = True
 
     async def stop_jellyfin(self):
-        _status = False
+        self._status = False
 
     # A normal method. It can be called from the TypeScript side using @decky/api.
     async def add(self, left: int, right: int) -> int:
         return left + right
 
     async def long_running(self):
-        await asyncio.sleep(15)
+        await asyncio.sleep(1)
         # Passing through a bunch of random data, just as an example
         await decky.emit("timer_event", "Hello from the backend!", True, 2)
 

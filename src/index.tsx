@@ -1,5 +1,4 @@
 import {
-  ButtonItem,
   PanelSection,
   PanelSectionRow,
   staticClasses
@@ -48,25 +47,88 @@ function Content() {
 
   return (
       <PanelSection title="Jellyfin">
-
         <PanelSectionRow>
-          <ButtonItem>
-            Estado: {running ? "🟢 Server is on" : "🔴 Server is off"}
-          </ButtonItem>
+          <div
+              style={{
+                width: "100%",
+                padding: "14px 18px",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.04)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                boxSizing: "border-box",
+              }}
+          >
+        <span
+            style={{
+              width: "18px",
+              height: "18px",
+              borderRadius: "50%",
+              background: running ? "#65d841" : "#d84343",
+              boxShadow: running
+                  ? "0 0 10px rgba(101,216,65,0.8)"
+                  : "0 0 10px rgba(216,67,67,0.8)",
+              flexShrink: 0,
+            }}
+        />
+
+            <span style={{ fontSize: "16px" }}>
+          Estado: {running ? "Server is on" : "Server is off"}
+        </span>
+          </div>
         </PanelSectionRow>
 
         <PanelSectionRow>
-          <ButtonItem onClick={() => startJellyfin()}>
-            Start Jellyfin Server
-          </ButtonItem>
-        </PanelSectionRow>
+          <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                width: "100%",
+              }}
+          >
+            <button
+                onClick={startJellyfin}
+                style={{
+                  flex: 1,
+                  minHeight: "58px",
+                  border: "none",
+                  borderRadius: "8px",
+                  background: running ? "rgba(255,255,255,0.08)" : "#2f9e28",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  opacity: running ? 0.45 : 1,
+                }}
+                disabled={running}
+            >
+              ▶ Start Jellyfin
+              <br />
+              Server
+            </button>
 
-        <PanelSectionRow>
-          <ButtonItem onClick={() => stopJellyfin()}>
-            Stop Jellyfin Server
-          </ButtonItem>
+            <button
+                onClick={stopJellyfin}
+                style={{
+                  flex: 1,
+                  minHeight: "58px",
+                  border: "none",
+                  borderRadius: "8px",
+                  background: running ? "#b83232" : "rgba(255,255,255,0.08)",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  opacity: running ? 1 : 0.45,
+                }}
+                disabled={!running}
+            >
+              ■ Stop Jellyfin
+              <br />
+              Server
+            </button>
+          </div>
         </PanelSectionRow>
-
       </PanelSection>
   );
 };
