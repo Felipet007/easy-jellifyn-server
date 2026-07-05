@@ -70,7 +70,7 @@ class Plugin:
         return "9096"
 
     async def server_running(self):
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
         await decky.emit("server_running_event", "¡Server is on!")
 
     # A normal method. It can be called from the TypeScript side using @decky/api.

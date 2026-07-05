@@ -41,26 +41,31 @@ function Content() {
   }, []);
 
   useEffect(() => {
-    const listener = addEventListener<[]>(
+    /*const listener =*/ addEventListener<[]>(
         "server_running_event",
         async () => {
-          await refreshStatus();
-          await printIP();
+          //await refreshStatus();
+          //await printIP();
 
           toaster.toast({
-            title: "Server is on!",
+            title: "Evento: Server is on!",
             body: `Server running on ${serverAddress}`,
           });
         }
     );
 
-    return () => removeEventListener("server_running_event", listener);
+    //return () => removeEventListener("server_running_event", listener);
   }, []);
 
   const startJellyfin = async () => {
     await startJellyfinServer();
-    //await refreshStatus();
-    //await printIP();
+    await refreshStatus();
+    await printIP();
+
+      toaster.toast({
+          title: "Click!",
+          body: `Clicked`,
+      });
   };
 
   const stopJellyfin = async () => {
