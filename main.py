@@ -27,7 +27,7 @@ class Plugin:
 
     async def get_server_address(self):
         ip = self.get_local_ip()
-        port = self.get_jellyfin_port()
+        port = await self.get_jellyfin_port()
 
         return f'{ip}:{port}'
 
@@ -71,6 +71,7 @@ class Plugin:
 
     async def server_running(self):
         await asyncio.sleep(1)
+        decky.logger.info("Voy a lanzar el evento de server_running")
         await decky.emit("server_running_event", "¡Server is on!")
 
     # A normal method. It can be called from the TypeScript side using @decky/api.

@@ -19,7 +19,7 @@ import { FaShip } from "react-icons/fa";
 const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
 const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
-const longTimer = callable<[], boolean>("long_running");
+//const longTimer = callable<[], boolean>("long_running");
 const getServerAddress = callable<[], string>("get_server_address");
 
 function Content() {
@@ -46,8 +46,9 @@ function Content() {
         async () => {
           //await refreshStatus();
           //await printIP();
+            console.log("Evento desde UI")
 
-          toaster.toast({
+            toaster.toast({
             title: "Evento: Server is on!",
             body: `Server running on ${serverAddress}`,
           });
@@ -72,7 +73,7 @@ function Content() {
 
   const stopJellyfin = async () => {
     await stopJellyfinServer();
-    longTimer();
+    await refreshStatus();
     setServerAddress("");
   };
 
@@ -144,7 +145,7 @@ function Content() {
                       fontFamily: "monospace",
                     }}
                 >
-                  {serverAddress}:8096
+                  {serverAddress}
                 </div>
               </div>
             </PanelSectionRow>
