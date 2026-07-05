@@ -1,8 +1,6 @@
 import {
-  ButtonItem,
   PanelSection,
   PanelSectionRow,
-  Navigation,
   staticClasses
 } from "@decky/ui";
 import {
@@ -13,103 +11,226 @@ import {
   toaster,
   // routerHook
 } from "@decky/api"
-import { useState } from "react";
-import { FaShip } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { SiJellyfin } from "react-icons/si";
 
-// import logo from "../assets/logo.png";
+//import logo from "../assets/logo.png";
 
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
-
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
+const jellyfinStatus = callable<[], boolean>("jellyfin_status");
+const startJellyfinServer = callable<[], boolean>("start_jellyfin");
+const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
+const getServerAddress = callable<[], string>("get_server_address");
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
+  const [running, setRunning] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [serverAddress, setServerAddress] = useState("");
 
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
+  const refreshStatus = async () => {
+    const status = await jellyfinStatus();
+    setRunning(status);
+  }
+
+  useEffect(() => {
+    refreshStatus();
+    if(running) {
+        getServerAddress().then(result => {
+            setServerAddress(result);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    const listenerStarting = addEventListener<[]>(
+        "server_starting_event",
+        async () => {
+          toaster.toast({
+            title: "Starting Jellyfin",
+            body: `Jellyfin server is starting, please wait.`,
+          });
+
+          setPending(true);
+        }
+    );
+
+    return () => removeEventListener("server_starting_event", listenerStarting);
+  }, []);
+
+    useEffect(() => {
+        const listenerRunning = addEventListener<[]>(
+            "server_running_event",
+            async () => {
+                await refreshStatus();
+                const serverAddress = await getServerAddress();
+                setServerAddress(serverAddress);
+                toaster.toast({
+                    title: "Running Jellyfin",
+                    body: `Server running on ${serverAddress}`,
+                });
+
+                setPending(false);
+            }
+        );
+
+        return () => removeEventListener("server_running_event", listenerRunning);
+    }, []);
+
+    useEffect(() => {
+        const listenerStop = addEventListener<[]>(
+            "server_stopped_event",
+            async () => {
+                toaster.toast({
+                    title: "Stopped",
+                    body: `Server has been stopped`,
+                });
+
+                refreshStatus()
+                setPending(false)
+                setServerAddress("")
+            }
+        );
+
+        return () => removeEventListener("server_stopped_event", listenerStop);
+    }, []);
+
+  const startJellyfin = async () => {
+      await startJellyfinServer();
   };
 
+  const stopJellyfin = async () => {
+    toaster.toast({
+        title: "Stopping Jellyfin",
+         body: `Server is being stopped, please wait.`,
+    });
+    setPending(true);
+    await stopJellyfinServer();
+  };
+
+  const pendingJellyfin = async () => {
+
+  }
+
   return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
-        </ButtonItem>
-      </PanelSectionRow>
+      <PanelSection title="Jellyfin">
+        <PanelSectionRow>
+          <div
+              style={{
+                width: "100%",
+                padding: "14px 18px",
+                marginBottom: "22px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.04)",
+                display: "flex",
+                alignItems: "center",
+                gap: "14px",
+                boxSizing: "border-box",
+              }}
+          >
+        <span
+            style={{
+              width: "20px",
+              height: "20px",
+              borderRadius: "50%",
+              background: pending ? "#f1ce50" : running ? "#2e9e44" : "#d93939",
+              boxShadow: pending? "0 0 18px rgba(255,193,7,0.95)" : running
+                  ? "0 0 14px rgba(57,255,20,0.9)"
+                  : "0 0 14px rgba(216,67,67,0.9)",
+              flexShrink: 0,
+            }}
+        />
 
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
+            <span style={{ fontSize: "16px", fontWeight: 600 }}>
+          Estado: {pending? "Server is starting" : running ? "Server is on" : "Server is off"}
+        </span>
+          </div>
+        </PanelSectionRow>
 
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
-    </PanelSection>
+        {running && (
+            <PanelSectionRow>
+              <div
+                  style={{
+                    width: "100%",
+                    padding: "14px 18px",
+                    marginBottom: "22px",
+                    borderRadius: "10px",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(255,255,255,0.04)",
+                    boxSizing: "border-box",
+                  }}
+              >
+                <div
+                    style={{
+                      fontSize: "12px",
+                      color: "rgba(255,255,255,0.65)",
+                      marginBottom: "8px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                >
+                  Dirección del servidor
+                </div>
+
+                <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      fontFamily: "monospace",
+                    }}
+                >
+                  {serverAddress}
+                </div>
+              </div>
+            </PanelSectionRow>
+        )}
+
+        <PanelSectionRow>
+          <button
+              onClick={pending ? pendingJellyfin : running ? stopJellyfin : startJellyfin}
+              style={{
+                width: "100%",
+                height: "86px",
+                border: "none",
+                borderRadius: "12px",
+                background: pending ? "#f1ce50" : running ? "#d93939" : "#2e9e44",
+                color: "white",
+                fontSize: "18px",
+                fontWeight: 700,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+          >
+        <span style={{ fontSize: "32px", lineHeight: 1 }}>
+          {pending? "" : running ? "■" : "▶"}
+        </span>
+
+            <span>
+          {pending? "Pending..." : running ? "Stop server" : "Start server"}
+        </span>
+          </button>
+        </PanelSectionRow>
+      </PanelSection>
   );
 };
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
-
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
+  console.log("Easy Decky Server plugin initializing, this is called once on frontend startup")
 
   return {
     // The name shown in various decky menus
-    name: "Test Plugin",
+    name: "Easy Jellyfin Server",
     // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
+    titleView: <div className={staticClasses.Title}>Easy Jellyfin Server</div>,
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
-    icon: <FaShip />,
+    icon: <SiJellyfin />,
     // The function triggered when your plugin unloads
     onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
+      console.log("Unloading");
     },
   };
 });

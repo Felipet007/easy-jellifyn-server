@@ -1,7 +1,7 @@
 {
   "name": "decky-plugin-template",
-  "version": "0.0.1",
-  "description": "A template to quickly create decky plugins from scratch, based on TypeScript and webpack",
+  "version": "1.0.0",
+  "description": "A Jellyfin plugin for on and off the server without entering in desktop mode",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -10,24 +10,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SteamDeckHomebrew/decky-plugin-template.git"
+    "url": "git+https://github.com/Felipet007/easy-jellifyn-server.git"
   },
   "keywords": [
     "decky",
     "plugin",
     "plugin-template",
     "steam-deck",
-    "deck"
+    "deck",
+    "jellyfin"
   ],
-  "author": "You <you@you.tld>",
+  "author": "Agente Secreto",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
+    "url": "https://github.com/Felipet007/easy-jellifyn-server/issues"
   },
-  "homepage": "https://github.com/SteamDeckHomebrew/decky-plugin-template#readme",
+  "homepage": "https://github.com/Felipet007/easy-jellifyn-server",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
-    "@decky/ui": "^4.11.0",
+    "@decky/ui": "^4.11.6",
     "@rollup/rollup-linux-x64-musl": "^4.53.3",
     "@types/react": "19.1.1",
     "@types/react-dom": "19.1.1",
