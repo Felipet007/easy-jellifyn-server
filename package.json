@@ -1,6 +1,6 @@
 {
   "name": "decky-plugin-template",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A Jellyfin plugin for on and off the server without entering in desktop mode",
   "type": "module",
   "scripts": {
