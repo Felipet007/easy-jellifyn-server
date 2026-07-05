@@ -20,7 +20,8 @@ class Plugin:
 
     async def start_jellyfin(self):
         self._status = True
-        self.server_running()
+        decky.logger.info("Voy a lanzar el evento")
+        await self.server_running()
 
     async def stop_jellyfin(self):
         self._status = False
@@ -43,14 +44,13 @@ class Plugin:
 
         return ip
 
-    def get_flatpak_app_path(self):
-        result = subprocess.run(
-            ["flatpak", "info", "--show-location", APP_ID],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return Path(result.stdout.strip())
+    async def get_flatpak_app_path(self):
+        result = await self.run_cmd(f"flatpak info --show-location {APP_ID}")
+        if result["returncode"] != 0:
+            raise RuntimeError(
+                f'flatpak info falló:\n{result["stderr"]}'
+            )
+        return Path(result["stdout"].strip())
 
     def get_jellyfin_config_path(self):
         app_path = self.get_flatpak_app_path()
@@ -59,12 +59,17 @@ class Plugin:
     async def get_jellyfin_port(self):
         try:
             config_path = self.get_jellyfin_config_path()
+            decky.logger.info(config_path)
             text = Path(config_path).read_text()
+            decky.logger.info(text)
 
             match = re.search(r"<HttpServerPortNumber>(\d+)</HttpServerPortNumber>", text)
+            decky.logger.info("found")
             if match:
                 return match.group(1)
-        except:
+        except Exception as e:
+            decky.logger.info("ups")
+            decky.logger.info(e)
             pass
 
         return "9096"
@@ -74,6 +79,30 @@ class Plugin:
         decky.logger.info("Voy a lanzar el evento de server_running")
         await decky.emit("server_running_event", "¡Server is on!")
 
+    async def run_cmd(self, cmd: str):
+        xdg_runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+
+        if not xdg_runtime_dir:
+            uid = os.getuid()
+            xdg_runtime_dir = f"/run/user/{uid}"
+
+        proc = await asyncio.create_subprocess_shell(
+            cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env={
+                **os.environ,
+                "XDG_RUNTIME_DIR": xdg_runtime_dir,
+            },
+        )
+
+        stdout, stderr = await proc.communicate()
+
+        return {
+            "returncode": proc.returncode,
+            "stdout": stdout.decode(),
+            "stderr": stderr.decode(),
+        }
     # A normal method. It can be called from the TypeScript side using @decky/api.
     async def add(self, left: int, right: int) -> int:
         return left + right
