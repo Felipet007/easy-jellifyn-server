@@ -12,9 +12,9 @@ import {
   // routerHook
 } from "@decky/api"
 import { useEffect, useState } from "react";
-import { FaShip } from "react-icons/fa";
+import { SiJellyfin } from "react-icons/si";
 
-// import logo from "../assets/logo.png";
+//import logo from "../assets/logo.png";
 
 const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
@@ -33,6 +33,11 @@ function Content() {
 
   useEffect(() => {
     refreshStatus();
+    if(running) {
+        getServerAddress().then(result => {
+            setServerAddress(result);
+        });
+    }
   }, []);
 
   useEffect(() => {
@@ -74,8 +79,6 @@ function Content() {
         const listenerStop = addEventListener<[]>(
             "server_stopped_event",
             async () => {
-                //await refreshStatus();
-                //await printIP();
                 toaster.toast({
                     title: "Stopped",
                     body: `Server has been stopped`,
@@ -83,6 +86,7 @@ function Content() {
 
                 refreshStatus()
                 setPending(false)
+                setServerAddress("")
             }
         );
 
@@ -96,8 +100,6 @@ function Content() {
   const stopJellyfin = async () => {
     setPending(false);
     await stopJellyfinServer();
-    await refreshStatus();
-    setServerAddress("");
   };
 
   const pendingJellyfin = async () => {
@@ -129,8 +131,8 @@ function Content() {
               width: "20px",
               height: "20px",
               borderRadius: "50%",
-              background: running ? "#39ff14" : "#d84343",
-              boxShadow: running
+              background: pending ? "#f1ce50" : running ? "#d93939" : "#2e9e44",
+              boxShadow: pending? "0 0 18px rgba(255,193,7,0.95)" : running
                   ? "0 0 14px rgba(57,255,20,0.9)"
                   : "0 0 14px rgba(216,67,67,0.9)",
               flexShrink: 0,
@@ -201,11 +203,11 @@ function Content() {
               }}
           >
         <span style={{ fontSize: "32px", lineHeight: 1 }}>
-          {running ? "■" : "▶"}
+          {pending? "" : running ? "■" : "▶"}
         </span>
 
             <span>
-          {running ? "Stop server" : "Start server"}
+          {pending? "Server is starting" : running ? "Stop server" : "Start server"}
         </span>
           </button>
         </PanelSectionRow>
@@ -224,11 +226,10 @@ export default definePlugin(() => {
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
-    icon: <FaShip />,
+    icon: <SiJellyfin />,
     // The function triggered when your plugin unloads
     onDismount() {
       console.log("Unloading");
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
     },
   };
 });

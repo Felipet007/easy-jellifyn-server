@@ -18,19 +18,21 @@ class Plugin:
 
     async def check_status(self):
         return await self.run_cmd(
-            "pgrep -af jellyfin || pgrep -af org.jellyfin.JellyfinServer"
+            "flatpak ps --columns=application | grep -Fx org.jellyfin.JellyfinServer"
         )
 
     async def start_jellyfin(self):
-        await self.run_cmd("nohup flatpak run org.jellyfin.JellyfinServer --noautorunwebapp >/tmp/jellyfin-flatpak.log 2>&1 &")
+        await self.run_cmd("nohup flatpak run org.jellyfin.JellyfinServer >/tmp/jellyfin-flatpak.log 2>&1 &")
         await decky.emit("server_starting_event", "Server is starting!")
         self.loop.create_task(self.wait_for_server())
 
     async def stop_jellyfin(self):
         await self.run_cmd("pkill -f jellyfin")
+        await asyncio.sleep(2)
         await decky.emit("server_stopped_event")
 
     async def wait_for_server(self):
+        await asyncio.sleep(5)
         for _ in range(30):
             result = await self.check_status()
 
