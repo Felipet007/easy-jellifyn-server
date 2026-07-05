@@ -98,15 +98,16 @@ function Content() {
   };
 
   const stopJellyfin = async () => {
+    toaster.toast({
+        title: "Stopping Jellyfin",
+         body: `Server is being stopped, please wait.`,
+    });
     setPending(true);
     await stopJellyfinServer();
   };
 
   const pendingJellyfin = async () => {
-      toaster.toast({
-          title: "Jellyfin is starting",
-          body: `Please wait until Jellyfin starts`,
-      });
+
   }
 
   return (
@@ -207,7 +208,7 @@ function Content() {
         </span>
 
             <span>
-          {pending? "Server is starting" : running ? "Stop server" : "Start server"}
+          {pending? "Pending..." : running ? "Stop server" : "Start server"}
         </span>
           </button>
         </PanelSectionRow>
