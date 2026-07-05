@@ -19,11 +19,11 @@ import { FaShip } from "react-icons/fa";
 const jellyfinStatus = callable<[], boolean>("jellyfin_status");
 const startJellyfinServer = callable<[], boolean>("start_jellyfin");
 const stopJellyfinServer = callable<[], boolean>("stop_jellyfin");
-//const longTimer = callable<[], boolean>("long_running");
 const getServerAddress = callable<[], string>("get_server_address");
 
 function Content() {
   const [running, setRunning] = useState(false);
+  const [pending, setPending] = useState(false);
   const [serverAddress, setServerAddress] = useState("");
 
   const refreshStatus = async () => {
@@ -31,51 +31,81 @@ function Content() {
     setRunning(status);
   }
 
-  const printIP = async () => {
-    const ip = await getServerAddress();
-    setServerAddress(ip);
-  }
-
   useEffect(() => {
     refreshStatus();
   }, []);
 
   useEffect(() => {
-    const listener = addEventListener<[]>(
-        "server_running_event",
+    const listenerStarting = addEventListener<[]>(
+        "server_starting_event",
         async () => {
-          //await refreshStatus();
-          //await printIP();
-            console.log("Evento desde UI")
-
-            toaster.toast({
-            title: "Evento: Server is on!",
-            body: `Server running on ${serverAddress}`,
+          toaster.toast({
+            title: "Starting Jellyfin",
+            body: `Jellyfin server is starting, please wait.`,
           });
+
+          setPending(true);
         }
     );
 
-    return () => removeEventListener("server_running_event", listener);
+    return () => removeEventListener("server_starting_event", listenerStarting);
   }, []);
 
+    useEffect(() => {
+        const listenerRunning = addEventListener<[]>(
+            "server_running_event",
+            async () => {
+                await refreshStatus();
+                const serverAddress = await getServerAddress();
+                setServerAddress(serverAddress);
+                toaster.toast({
+                    title: "Running Jellyfin",
+                    body: `Server running on ${serverAddress}`,
+                });
+
+                setPending(false);
+            }
+        );
+
+        return () => removeEventListener("server_running_event", listenerRunning);
+    }, []);
+
+    useEffect(() => {
+        const listenerStop = addEventListener<[]>(
+            "server_stopped_event",
+            async () => {
+                //await refreshStatus();
+                //await printIP();
+                toaster.toast({
+                    title: "Stopped",
+                    body: `Server has been stopped`,
+                });
+
+                refreshStatus()
+                setPending(false)
+            }
+        );
+
+        return () => removeEventListener("server_stopped_event", listenerStop);
+    }, []);
+
   const startJellyfin = async () => {
-      toaster.toast({
-          title: "Click!",
-          body: `Clicked`,
-      });
-
-    await startJellyfinServer();
-    await refreshStatus();
-    await printIP();
-
-
+      await startJellyfinServer();
   };
 
   const stopJellyfin = async () => {
+    setPending(false);
     await stopJellyfinServer();
     await refreshStatus();
     setServerAddress("");
   };
+
+  const pendingJellyfin = async () => {
+      toaster.toast({
+          title: "Jellyfin is starting",
+          body: `Please wait until Jellyfin starts`,
+      });
+  }
 
   return (
       <PanelSection title="Jellyfin">
@@ -108,7 +138,7 @@ function Content() {
         />
 
             <span style={{ fontSize: "16px", fontWeight: 600 }}>
-          Estado: {running ? "Server is on" : "Server is off"}
+          Estado: {pending? "Server is starting" : running ? "Server is on" : "Server is off"}
         </span>
           </div>
         </PanelSectionRow>
@@ -153,13 +183,13 @@ function Content() {
 
         <PanelSectionRow>
           <button
-              onClick={running ? stopJellyfin : startJellyfin}
+              onClick={pending ? pendingJellyfin : running ? stopJellyfin : startJellyfin}
               style={{
                 width: "100%",
                 height: "86px",
                 border: "none",
                 borderRadius: "12px",
-                background: running ? "#d93939" : "#2e9e44",
+                background: pending ? "#f1ce50" : running ? "#d93939" : "#2e9e44",
                 color: "white",
                 fontSize: "18px",
                 fontWeight: 700,
@@ -186,19 +216,6 @@ function Content() {
 export default definePlugin(() => {
   console.log("Easy Decky Server plugin initializing, this is called once on frontend startup")
 
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
-
   return {
     // The name shown in various decky menus
     name: "Easy Jellyfin Server",
@@ -210,8 +227,7 @@ export default definePlugin(() => {
     icon: <FaShip />,
     // The function triggered when your plugin unloads
     onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
+      console.log("Unloading");
       // serverApi.routerHook.removeRoute("/decky-plugin-test");
     },
   };

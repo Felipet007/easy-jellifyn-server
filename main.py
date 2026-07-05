@@ -6,25 +6,39 @@ import os
 import decky
 import asyncio
 import socket
-import subprocess
-from pathlib import Path
 import re
 
 APP_ID = "org.jellyfin.JellyfinServer"
 
 class Plugin:
-    _status = False
 
     async def jellyfin_status(self):
-        return self._status
+        result = await self.check_status()
+        return result["returncode"] == 0
+
+    async def check_status(self):
+        return await self.run_cmd(
+            "pgrep -af jellyfin || pgrep -af org.jellyfin.JellyfinServer"
+        )
 
     async def start_jellyfin(self):
-        self._status = True
-        decky.logger.info("Voy a lanzar el evento")
-        await self.server_running()
+        await self.run_cmd("nohup flatpak run org.jellyfin.JellyfinServer --noautorunwebapp >/tmp/jellyfin-flatpak.log 2>&1 &")
+        await decky.emit("server_starting_event", "Server is starting!")
+        self.loop.create_task(self.wait_for_server())
 
     async def stop_jellyfin(self):
-        self._status = False
+        await self.run_cmd("pkill -f jellyfin")
+        await decky.emit("server_stopped_event")
+
+    async def wait_for_server(self):
+        for _ in range(30):
+            result = await self.check_status()
+
+            if result["returncode"] == 0:
+                await decky.emit("server_running_event")
+                return
+
+            await asyncio.sleep(0.5)
 
     async def get_server_address(self):
         ip = self.get_local_ip()
@@ -44,40 +58,21 @@ class Plugin:
 
         return ip
 
-    async def get_flatpak_app_path(self):
-        result = await self.run_cmd(f"flatpak info --show-location {APP_ID}")
-        if result["returncode"] != 0:
-            raise RuntimeError(
-                f'flatpak info falló:\n{result["stderr"]}'
-            )
-        return Path(result["stdout"].strip())
-
-    def get_jellyfin_config_path(self):
-        app_path = self.get_flatpak_app_path()
-        return app_path / "config" / "jellyfin" / "system.xml"
-
     async def get_jellyfin_port(self):
-        try:
-            config_path = self.get_jellyfin_config_path()
-            decky.logger.info(config_path)
-            text = Path(config_path).read_text()
-            decky.logger.info(text)
+        result = await self.run_cmd("ss -tulpn | grep -i jellyfin")
 
-            match = re.search(r"<HttpServerPortNumber>(\d+)</HttpServerPortNumber>", text)
-            decky.logger.info("found")
+        if result["returncode"] != 0:
+            return "8096"
+
+        for line in result["stdout"].splitlines():
+            match = re.search(r":(\d+)\s", line)
             if match:
-                return match.group(1)
-        except Exception as e:
-            decky.logger.info("ups")
-            decky.logger.info(e)
-            pass
+                port = match.group(1)
 
-        return "9096"
+                if port not in ["1900", "7359"]:
+                    return port
 
-    async def server_running(self):
-        await asyncio.sleep(1)
-        decky.logger.info("Voy a lanzar el evento de server_running")
-        await decky.emit("server_running_event", "¡Server is on!")
+        return "8096"
 
     async def run_cmd(self, cmd: str):
         xdg_runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
@@ -86,14 +81,18 @@ class Plugin:
             uid = os.getuid()
             xdg_runtime_dir = f"/run/user/{uid}"
 
+        env = dict(os.environ)
+
+        env.pop("LD_LIBRARY_PATH", None)
+        env.pop("LD_PRELOAD", None)
+
+        env["XDG_RUNTIME_DIR"] = xdg_runtime_dir
+
         proc = await asyncio.create_subprocess_shell(
             cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env={
-                **os.environ,
-                "XDG_RUNTIME_DIR": xdg_runtime_dir,
-            },
+            env=env
         )
 
         stdout, stderr = await proc.communicate()
@@ -103,14 +102,6 @@ class Plugin:
             "stdout": stdout.decode(),
             "stderr": stderr.decode(),
         }
-    # A normal method. It can be called from the TypeScript side using @decky/api.
-    async def add(self, left: int, right: int) -> int:
-        return left + right
-
-    async def long_running(self):
-        await asyncio.sleep(1)
-        # Passing through a bunch of random data, just as an example
-        await decky.emit("timer_event", "Hello from the backend!", True, 2)
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
@@ -128,9 +119,6 @@ class Plugin:
     async def _uninstall(self):
         decky.logger.info("Goodbye World!")
         pass
-
-    async def start_timer(self):
-        self.loop.create_task(self.long_running())
 
     # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
