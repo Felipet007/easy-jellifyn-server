@@ -98,7 +98,7 @@ function Content() {
   };
 
   const stopJellyfin = async () => {
-    setPending(false);
+    setPending(true);
     await stopJellyfinServer();
   };
 
@@ -131,7 +131,7 @@ function Content() {
               width: "20px",
               height: "20px",
               borderRadius: "50%",
-              background: pending ? "#f1ce50" : running ? "#d93939" : "#2e9e44",
+              background: pending ? "#f1ce50" : running ? "#2e9e44" : "#d93939",
               boxShadow: pending? "0 0 18px rgba(255,193,7,0.95)" : running
                   ? "0 0 14px rgba(57,255,20,0.9)"
                   : "0 0 14px rgba(216,67,67,0.9)",
