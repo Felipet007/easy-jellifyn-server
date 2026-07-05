@@ -41,7 +41,7 @@ function Content() {
   }, []);
 
   useEffect(() => {
-    /*const listener =*/ addEventListener<[]>(
+    const listener = addEventListener<[]>(
         "server_running_event",
         async () => {
           //await refreshStatus();
@@ -54,18 +54,20 @@ function Content() {
         }
     );
 
-    //return () => removeEventListener("server_running_event", listener);
+    return () => removeEventListener("server_running_event", listener);
   }, []);
 
   const startJellyfin = async () => {
-    await startJellyfinServer();
-    await refreshStatus();
-    await printIP();
-
       toaster.toast({
           title: "Click!",
           body: `Clicked`,
       });
+
+    await startJellyfinServer();
+    await refreshStatus();
+    await printIP();
+
+
   };
 
   const stopJellyfin = async () => {
